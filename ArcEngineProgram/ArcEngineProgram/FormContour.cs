@@ -28,13 +28,15 @@ namespace ArcEngineProgram
 
     public partial class FormContour : Form
     {
+        string workSpaceName;
         public FormContour()
         {
             InitializeComponent();
             toolStripStatusLabel1.Text = "";
             toolStripStatusLabel2.Text = "";
+            
         }
-        const string WorkSpaceName = @"../Debug/Files";
+        //const string WorkSpaceName = @"../Debug/Files";
         //private void AddInfo_statusbar(object o, System.EventArgs e) //更新状态栏信息
         //{
         //    toolStripStatusLabel1.Text = o.ToString();
@@ -92,12 +94,18 @@ namespace ArcEngineProgram
             string filename = System.IO.Path.GetFileNameWithoutExtension(FileFullPath);
             string shpFolder = System.IO.Path.GetDirectoryName(FileFullPath);
             IWorkspaceFactory shpWSF = new ShapefileWorkspaceFactoryClass();
-            IFeatureWorkspace shpFWS = (IFeatureWorkspace)shpWSF.OpenFromFile(WorkSpaceName, 0);
+
+            if (!Directory.Exists(workSpaceName))
+            {
+                Directory.CreateDirectory(workSpaceName);
+            }
+                
+            IFeatureWorkspace shpFWS = (IFeatureWorkspace)shpWSF.OpenFromFile(workSpaceName, 0);
             //建立基本属性表
             IFields pFields = CreateShapeFields(esriGeometryType.esriGeometryPoint);
 
             IFeatureClass pFeatureClass;
-            string filename_shp=WorkSpaceName+@"/"+filename+".shp";
+            string filename_shp=workSpaceName+@"/"+filename+".shp";
             if (System.IO.File.Exists(filename_shp))
             {
                 System.IO.File.Delete(filename_shp);
@@ -224,11 +232,11 @@ namespace ArcEngineProgram
         }
 
  
-        private IFeatureClass Create_ContourLine(ITin pTin,string WorkSpaceName,string FileName)
+        private IFeatureClass Create_ContourLine(ITin pTin,string workSpaceName,string FileName)
         {
             int pInterval = 1;
             IWorkspaceFactory contourWSF = new ShapefileWorkspaceFactoryClass();
-            IFeatureWorkspace contourFWS = (IFeatureWorkspace)contourWSF.OpenFromFile(WorkSpaceName, 0);
+            IFeatureWorkspace contourFWS = (IFeatureWorkspace)contourWSF.OpenFromFile(workSpaceName, 0);
             IFields pFields = CreateShapeFields(esriGeometryType.esriGeometryPolyline);
             contourFWS.CreateFeatureClass(FileName, pFields, null, null, esriFeatureType.esriFTSimple, "Shape", null);
             IFeatureClass pContourFeatureClass = contourFWS.OpenFeatureClass(FileName);
@@ -241,10 +249,10 @@ namespace ArcEngineProgram
         private IFeature Convert_Point2MultiPoint_Class(IFeatureClass PointFeatureClass)
         {
             IWorkspaceFactory contourWSF = new ShapefileWorkspaceFactoryClass();
-            IFeatureWorkspace contourFWS = (IFeatureWorkspace)contourWSF.OpenFromFile(WorkSpaceName, 0);
+            IFeatureWorkspace contourFWS = (IFeatureWorkspace)contourWSF.OpenFromFile(workSpaceName, 0);
             IFields pFields = CreateShapeFields(esriGeometryType.esriGeometryMultipoint);
             string filename = PointFeatureClass.AliasName + "_muilti";
-            string filename_shp = WorkSpaceName + @"/" + filename + ".shp";
+            string filename_shp = workSpaceName + @"/" + filename + ".shp";
             if (System.IO.File.Exists(filename_shp))
             {
                 System.IO.File.Delete(filename_shp);
@@ -326,14 +334,14 @@ namespace ArcEngineProgram
             ITinLayer  pTinLayer = axSceneControl1.Scene.get_Layer(0) as ITinLayer;
             ITin pTin = pTinLayer.Dataset as ITin;
             string contourFileName=pTinLayer.Name+"_Contour";
-            string contourFileName_shp = WorkSpaceName + @"/" + contourFileName + ".shp";
+            string contourFileName_shp = workSpaceName + @"/" + contourFileName + ".shp";
             if (System.IO.File.Exists(contourFileName_shp))
             {
                 System.IO.File.Delete(contourFileName_shp);
                 System.IO.File.Delete(System.IO.Path.ChangeExtension(contourFileName_shp,".dbf"));
                 System.IO.File.Delete(System.IO.Path.ChangeExtension(contourFileName_shp,".shx"));
             }
-            IFeatureClass contourFeatureClass = Create_ContourLine(pTin, WorkSpaceName, contourFileName);
+            IFeatureClass contourFeatureClass = Create_ContourLine(pTin, workSpaceName, contourFileName);
             //添加等高线图层  
             IFeatureLayer pFeatureLayer = new FeatureLayerClass();
             pFeatureLayer.FeatureClass = contourFeatureClass;
@@ -381,6 +389,13 @@ namespace ArcEngineProgram
         private void FormContour_FormClosed(object sender, FormClosedEventArgs e)
         {
             this.DialogResult = DialogResult.OK;
+        }
+
+        private void FormContour_Load(object sender, EventArgs e)
+        {
+            string workSpaceDirectory = System.Environment.CurrentDirectory;
+            string fileName = "File";
+            workSpaceName = System.IO.Path.Combine(workSpaceDirectory, fileName);
         }
 
         //private void axMapControl1_OnMouseMove(object sender, IMapControlEvents2_OnMouseMoveEvent e)
